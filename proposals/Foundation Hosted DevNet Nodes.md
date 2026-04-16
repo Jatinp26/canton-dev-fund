@@ -70,6 +70,14 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 - **Focus:** Ongoing operations
 - **Deliverables / Value Metrics:** Ongoing node operation, upgrades, key management, quarterly usage reports to Tech & Ops Committee
 
+**Note:* Due to the recurring nature of funding, this proposal introduces a Pilot Program for working with Projects and supporting Developer Initiatives for 12 Months.
+
+After Pilot Program, Canton Foundation submits a Performace Report to the Tech & Ops Committee. The Review Report shall be submitted no later than 30 days following the end of Pilot Program. 
+
+Upon submission, the committee shall have 30 days to review the report and raise any material shortfalls. If no such shortfalls are raised within this period, the report shall be deemed accepted and the Program Continues.
+
+If the committee identifies material shortfalls, Foundation has 30 days to present a remediation plan. Failure to remediate within this period may result in suspension or termination of future disbursements.
+
 ## Acceptance Criteria
 
 The Tech & Ops Committee will evaluate completion based on:
@@ -78,22 +86,23 @@ The Tech & Ops Committee will evaluate completion based on:
 - Demonstrated functionality or operational readiness
 - Alignment with stated value metrics
 
-## Funding
+## Funding Breakdown by Milestone
+ 
+The exact CC amount subject to volatility adjustment, Initial 12-month Pilot, with quarterly reviews and automatic renewal after 12 Months subject to satisfactory performance during the Pilot Period.
 
-**Total Funding Request:** $50,000
-
-### Payment Breakdown by Milestone
+Review Plan: Quarterly evaluation by the Tech & Ops Committee based on the proposed quarterly reporting including projects supported and Dev Adoption Initatives Used. The Committee may terminate future payments after the Pilot Program if Delivrables were not met. Monthly disbursements at the end of each month.
 
 | Category | Amount | Detail |
 | :---- | ----- | :---- |
-| **Node Infrastructure (Setup)** | $6,000 | Initial provisioning of 4 validator nodes i.e compute instances, managed PostgreSQL databases, static IPs, TLS certificates, DNS configuration |
-| **Node Infrastructure (12 mo ops)** | $15,000 | Ongoing hosting for compute + DB + network + storage for 4 Nodes. |
-| **API Gateway & Monitoring** | $6,000 | API gateway setup + 12-month licensing/ops including rate limiting, key management, request logging, abuse detection |
-| **DevOps Time (Setup)** | $6,000 | API gateway integration & rate limit tuning, monitoring/alerting setup. |
-| **DevOps Time (12-mo ops)** | $10,000 | ongoing for node upgrades to track DevNet releases, key issuance/revocation, incident response, quarterly telemetry reports. |
-| **Team for Coordination and Management** | $5,000 | Qualification review for inbound projects, hackathon key distribution & Support by Foundation, partner onboarding calls + Support |
-| **Buffer** | $2,000 | Unforeseen infrastructure scaling, DevNet reset recovery, additional node if demand exceeds capacity |
-| **Total** | **$50,000** | |
+| **Node Infrastructure (Setup)** | 40,871 CC | Initial provisioning of 4 validator nodes i.e compute instances, managed PostgreSQL databases, static IPs, TLS certificates, DNS configuration |
+| **Node Infrastructure (12 mo ops)** | 102,180 CC | Ongoing hosting for compute + DB + network + storage for 4 Nodes. |
+| **API Gateway & Monitoring** | 40,871 CC | API gateway setup + 12-month licensing/ops including rate limiting, key management, request logging, abuse detection |
+| **DevOps Setup** | 40,871 CC | API gateway integration & rate limit tuning, monitoring/alerting setup. |
+| **DevOps Upgrades (12-mo ops)** | 68,118 CC | ongoing for node upgrades to track DevNet releases, key issuance/revocation, incident response, quarterly telemetry reports. |
+| **Team for Coordination and Management** | 34,059 CC | Qualification review for inbound projects, hackathon key distribution & Support by Foundation, partner onboarding calls + Support |
+| **Buffer** | 13,624 CC | Unforeseen infrastructure scaling, DevNet reset recovery, additional node if demand exceeds capacity |
+| **Total** | **340,600 CC** | |
+
 
 ## Co-Marketing
 
