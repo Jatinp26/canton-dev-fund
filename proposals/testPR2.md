@@ -9,7 +9,7 @@
 
 ## Abstract
 
-This proposal introduces the **Canton Upgrade Readiness Checker**: a CLI tool that validates whether validator and application infrastructure is ready for a Canton or Daml 3 upgrade. It analyzes configuration files, package versions, topology assumptions, and known upgrade patterns to surface breaking changes, deprecation warnings, and misconfigurations before they reach production. By reducing upgrade risk and manual checking effort, this tool improves validator uptime, shortens migration windows, and lowers the barrier to upgrade adoption for new teams building on Canton.
+This proposal introduces the **Canton Upgrade Readiness Checker**: a CLI tool that validates whether validator and application infrastructure is ready for a Canton or Daml 3 upgrade. It analyzes configuration files-, package versions, topology assumptions, and known upgrade patterns to -surface breaking changes, deprecation warnings, and misconfigurations before they reach production. By reducing upgrade risk and manual checking effort, this tool improves validator uptime, shortens migra-tion windows, and lowers the barrier to upgrade adoption for new -teams building on Canton.
 
 ---
 
@@ -18,12 +18,12 @@ This proposal introduces the **Canton Upgrade Readiness Checker**: a CLI tool th
 ### 1. Objective
 
 **Problem:**  
-Canton and Daml upgrades often require coordinated changes to validator configs, topology, package versions, and API usage. Operators currently perform these checks manually or via ad hoc scripts, increasing the risk of downtime, misconfigurations, and extended rollout windows. The LSU-style upgrade path shows that protocol-level changes are becoming more complex and systematic, but no shared tooling exists to validate readiness for those changes.
+Canton and Daml upgrades often require co-ordinated changes to validator configs, topology, package versions, and API usage. Operators currently perform these checks manually or via ad hoc scripts, increasing the risk of downtime, misconfigurations, and extended rollout windows. The LSU-style upgrade path shows- that protocol-level changes are becoming more complex -and systematic, but no shared tooling exists to validate readiness for those changes.
 
 **Intended outcome:**  
 
 - Eliminate “surprise” upgrade blockers by catching configuration and version mismatches before deployment.  
-- Provide a standard, reusable tool for validators, app teams, and onboarding teams to validate readiness for a Canton or Daml 3 upgrade.  
+- Provide a standard, reusable tool-- for validators, app teams, and onboarding teams to validate readiness for a Canton or Daml 3 upgrade.  
 - Reduce upgrade coordination time from days to minutes and make upgrades safer for new adopters.
 
 ---
@@ -34,35 +34,35 @@ Canton and Daml upgrades often require coordinated changes to validator configs,
 
 1. User runs `canton-upgrade-checker validate` over a validator or app deployment directory.  
 2. The tool parses configuration files (`.conf`, `.json`, `.yaml`, TOML), package manifests, and topology files.  
-3. It applies a rules engine that encodes:  
+3. It applies a rules engine that -encodes:  
    - Known Canton/Daml 3 upgrade rules (e.g., deprecated fields, required fields, upgraded topology assumptions).  
-   - Version constraints (e.g., “minimum Daml 3.1 runtime”, “validator 3.x required”).  
+   - Version- constraints (e.g., “minimum Daml 3.1 runtime”, “validator 3.x required”).  
    - Common misconfigurations (e.g., mismatched certificates, invalid topology IDs, missing upgrade flags).  
 4. The tool outputs:  
    - A human-readable readiness report.  
-   - Structured JSON output for CI/CD pipelines.  
+   - Structured JSON- output for CI/CD pipelines.  
    - A list of issues ranked by severity (error, warning, hint).  
    - Optional auto-suggested fixes (e.g., recommended config snippets, `upgrade-plan.md`).
 
 **Technologies and components:**  
 
-- Implementation language: Go or Rust (Rust preferred for safety and tooling culture).  
+- Implementation language: Go- or Rust (Rust preferred for safety and tooling culture).  
 - Configuration parsing: compositional parsers for common config formats (HOCON, JSON, YAML, TOML).  
 - Rules engine: declarative YAML-based rule definitions that can be extended over time.  
-- Output: text report, JSON, and optional Markdown/HTML.  
-- CI/CD integration: hooks for GitHub Actions / GitLab CI to block merges if critical issues exist.  
+- Output: text report, JSON, -and optional Markdown/HTML.  
+- CI/CD integration: hooks for- GitHub Actions / GitLab CI to block merges if critical issues exist.  
 - Source: fully open-source repository under a permissive OSS license, hosted in the Canton ecosystem (e.g., `canton-upgrade-checker`).
 
 **Operational approach:**  
 
 - The tool runs offline over local or downloaded configs; no live Canton node interaction initially.  
-- Later, an optional plugin mode could connect to a node’s admin API to validate runtime-level assumptions (if scope and security are acceptable to the committee).
+- Later, an optional -plugin mode could connect to a node’s admin API to validate runtime-level assumptions (if scope and security are acceptable to the committee).
 
 ---
 
 ### 3. Architectural Alignment
 
-This work aligns with Canton architecture and ecosystem priorities in several ways:
+This work aligns with -Canton architecture and ecosystem priorities in several ways:
 
 - **Protocol upgrade support:**  
   Aligns with LSU-style upgrades and Canton’s global synchronizer model, where upgrades must be coordinated without global downtime. The tool does not change the protocol, but it makes the upgrade path safer and easier to operationalize.  
@@ -161,20 +161,6 @@ The Tech & Ops Committee will evaluate completion based on:
 
 The project duration is **under 6 months**, so the grant is denominated in fixed Canton Coin.  
 Should the project timeline extend beyond 6 months due to **Committee-requested scope changes**, any remaining milestones must be renegotiated to account for significant USD/CC price volatility.
-
----
-
-## Co-Marketing
-
-Upon release, the implementing entity will collaborate with the Canton Foundation on:
-
-- **Announcement coordination:**  
-  - Joint announcement post on the Canton Foundation site and Discord.  
-- **Case study or technical blog:**  
-  - A short “lessons learned” write-up showcasing how the tool helped validators or a pilot testnet upgrade.  
-- **Developer or ecosystem promotion:**  
-  - Inclusion of `canton-upgrade-checker` in onboarding docs for new validator teams.  
-  - Optional live demo at a Canton community call or workshop.  
 
 ---
 
