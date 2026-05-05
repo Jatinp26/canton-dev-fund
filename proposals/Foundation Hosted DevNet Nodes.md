@@ -35,6 +35,7 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 
 - API key issuance managed by DevRel/BD team via an internal tracking sheet.
 - Per-key rate limits enforced at the API gateway layer (requests/minute, transaction volume caps, and more!)
+- For Canton Ledger API authentication, Developers receive both the gateway API key for endpoint access and a shared signing secret for generating valid JWT tokens with correct actAs/readAs claims. The Canton Admin API is not exposed through the gateway configuration.
 - Keys scoped to DevNet only, non-transferable, revocable
 - Revoking API Endpoints allocated after the Partner Whitelisting is completed.
 
@@ -43,6 +44,7 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 - Not a public sandbox, no open registration, no docs listing
 - Not a replacement for running your own validator /  Working with a NaaS, projects are expected to run their own node / Setup a NaaS for TestNet/MainNet and Get whitelisted for DevNet.
 - It's not mainnet or testnet infrastructure, only for DevNet.
+- Nodes are planned to be reset on a bi-weekly cadence, mirroring DevNet's own reset behavior as well. Active key holders are notified 3 Working days before each reset.
 
 **Adoption and Access** (Access to these endpoints will not be publicly listed.)
 
@@ -68,7 +70,8 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 
 ### Milestone 4: 12 Month Operations
 - **Focus:** Ongoing operations
-- **Deliverables / Value Metrics:** Ongoing node operation, upgrades, key management, quarterly usage reports to Tech & Ops Committee
+- **Deliverables / Value Metrics:** Ongoing node operation, key management, and quarterly usage reports to Tech & Ops Committee. Node upgrades aimed to be applied within a week of each DevNet/Splice release. Bi-weekly node resets on a published schedule with 3 Working day advance notice to active key holders. Monitoring and alerting on node health with defined incident response SLA under the NaaS service agreement (shared with committee at M1). Database maintenance and log retention managed by NaaS operator.
+
 
 **Note:* Due to the recurring nature of funding, this proposal introduces a Pilot Program for working with Projects and supporting Developer Initiatives for 12 Months.
 
