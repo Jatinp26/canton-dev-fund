@@ -9,7 +9,7 @@
 
 ## Abstract
 
-Canton Foundation will deploy and operate 3–4 dedicated DevNet validator nodes, exposing rate-limited JSON Ledger API endpoints. Access credentials will be issued by DevRel/BD staff after a qualification review (project legitimacy, use case fit, no bad actors). Endpoints will not appear in public documentation or on the Canton website. The Keys will be revoked after the Partner Whitelisting is done / Hackathon event is over i.e Foundation will give a limited validity time key which will be automatically revoked after that time of 14 days and after that once whitelisted, developers will continue on their own whitelisted IP. The qualification bar is intentionally low, the goal is to eliminate the timing friction of onboarding and Building.
+Canton Foundation will deploy and operate 3–4 dedicated DevNet validator nodes, exposing rate-limited JSON Ledger API endpoints. Access credentials will be issued by DevRel/BD staff after a qualification review (project legitimacy, use case fit, no bad actors). Endpoints will not appear in public documentation or on the Canton website. JWT tokens will be revoked after Partner Whitelisting is done / Hackathon event is over i.e Foundation will issue time-limited JWT tokens which automatically expire after 14 days. The qualification bar is intentionally low, the goal is to eliminate the timing friction of onboarding and Building.
 
 ## Specification
 
@@ -29,15 +29,15 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 **Infrastructure:**
 
 - 3 – 4 validator nodes deployed on Canton DevNet, meeting standard requirements.
-- Nodes operated and maintained by Canton Foundation or a trusted NaaS provider under Foundation direction.
+- Nodes operated by a trusted NaaS provider under Canton Foundation direction. Canton Foundation retains admin rights over the participant nodes. The NaaS provider manages infrastructure operations (compute, uptime, upgrades) and executes user/party management actions at Foundation direction only.
 
 **Access control:**
 
-- API key issuance managed by DevRel/BD team via an internal tracking sheet.
-- Per-key rate limits enforced at the API gateway layer (requests/minute, transaction volume caps, and more!)
+- JWT token issuance managed by DevRel/BD team via an internal tracking sheet.
+- Per-token rate limits enforced at a access controll layer (requests/minute, transaction volume caps, and more!)
 - For Canton Ledger API authentication, Developers receive both the gateway API key for endpoint access and a shared signing secret for generating valid JWT tokens with correct actAs/readAs claims. The Canton Admin API is not exposed through the gateway configuration.
-- Keys scoped to DevNet only, non-transferable, revocable
-- Revoking API Endpoints allocated after the Partner Whitelisting is completed.
+- JWT tokens scoped to DevNet only and be revocable
+- JWT tokens revoked after Partner Whitelisting is completed or Hackathon event ends.
 
 **What this is not:**
 
@@ -46,10 +46,30 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 - It's not mainnet or testnet infrastructure, only for DevNet.
 - Nodes are planned to be reset on a bi-weekly cadence, mirroring DevNet's own reset behavior as well. Active key holders are notified 3 Working days before each reset.
 
+**What this supports:**
+
+- CIP-0103 wallet connectivity: Nodes are configured to support CIP-0103 compliant wallet connectivity. Developers using the dApp SDK for transaction signing can test flows.
+- Wallet Gateway compatible: Ledger API access is sufficient for developers to run their own Wallet Gateway instance against the shared participant, enabling full wallet application testing on DevNet.
+- Standard party model: Developers are issued JWT tokens scoped to participant-hosted parties. The participant handles transaction signing internally as no external key management infrastructure required for development and testing workflows.
+
+**Responsibilities: Canton Foundation vs. NaaS Provider**
+
+> Canton Foundation holds all access control, ops, and governance decisions i.e who gets access, when tokens are revoked, and what the nodes are used for. The NaaS provider is an infrastructure executor, not a decision maker.
+
+| Responsibility | Canton Foundation | NaaS Provider |
+|---|---|---|
+| JWT token issuance and revocation | Responsible | Not involved |
+| Developer qualification and onboarding |  Responsible | Not involved |
+| Compute, storage, networking infrastructure | Outsourced | Responsible |
+| Quarterly usage and Impact reports to committee | Responsible | Not involved |
+| Node uptime and health monitoring | Outsourced | Responsible |
+| Database maintenance and bi-weekly Pruning | Outsourced | Responsible |
+| Canton/Splice version upgrades | Coordinate and Check | Executed under Standard SLA |
+
 **Adoption and Access** (Access to these endpoints will not be publicly listed.)
 
 - **Hackathons:** Canton Foundation sponsoring a hackathon will pre qualify all participating teams and issue keys at event kickoff and will be auto revoked by end of the event.
-- **Inbound ecosystem projects:** BD qualifies projects during initial discovery calls, promising early start projects receive keys while their own validator whitelisting processes / NaaS setup process gets done, removing overall onboarding frction on DevNet.
+- **Inbound ecosystem projects:** BD qualifies projects during initial discovery calls, promising early start projects receive JWT tokens while their own validator whitelisting processes / NaaS setup process gets done, removing overall onboarding frction on DevNet.
 
 ## Milestones and Deliverables
 
@@ -61,7 +81,7 @@ Moreover, adding to more facts to the problem support, Foundation members have s
 ### Milestone 2: Setup Infra and Access Control Guidelines
 - **Estimated Delivery:** Weeks 3 – 4
 - **Focus:** API gateway and rate limiting setup
-- **Deliverables / Value Metrics:** API gateway deployed with per-key rate limiting
+- **Deliverables / Value Metrics:** A Gateway deployed with per JWT token rate limiting. Node configuration validated for CIP-0103 wallet connectivity and Wallet Gateway compatibility, with developer documentation covering how to connect a CIP-0103 compliant wallet and run a Wallet Gateway instance against the shared endpoint.
 
 ### Milestone 3: Pilot Cohort
 - **Estimated Delivery:** Week 4-6
