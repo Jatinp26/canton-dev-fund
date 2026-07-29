@@ -4,155 +4,135 @@ on:
   pull_request_target:
     types: [labeled]
 
+permissions:
+  pull-requests: read
+  contents: read
+
 jobs:
   ai-analysis:
     if: github.event.label.name == 'Core/ready for vote'
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
     steps:
-      - name: Checkout PR head branch
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Get changed files
-        id: changed
+      - name: Get proposal content and analyze
+        id: analysis
         uses: actions/github-script@v7
         with:
           script: |
+            const pr = context.payload.pull_request;
             const files = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number
+              pull_number: pr.number
             });
-            const proposalFiles = files.data
-              .filter(f => f.filename.startsWith('proposals/') && f.filename.endsWith('.md'))
-              .map(f => f.filename);
-            core.setOutput('files', proposalFiles.join('\n'));
+            const proposalFile = files.data.find(f =>
+              f.filename.startsWith('proposals/') && f.filename.endsWith('.md')
+            );
 
-      - name: Analyze proposal for AI signals
-        id: analysis
-        env:
-          CHANGED_FILES: ${{ steps.changed.outputs.files }}
-        run: |
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "score=0" >> $GITHUB_OUTPUT
-            echo "max_score=0" >> $GITHUB_OUTPUT
-            echo "percentage=0" >> $GITHUB_OUTPUT
-            echo "risk=N/A" >> $GITHUB_OUTPUT
-            echo "no_proposal=true" >> $GITHUB_OUTPUT
-            echo "" > /tmp/findings.txt
-            echo "" > /tmp/info.txt
-            exit 0
-          fi
+            if (!proposalFile) {
+              core.setOutput('no_proposal', 'true');
+              core.setOutput('score', '0');
+              core.setOutput('max_score', '0');
+              core.setOutput('percentage', '0');
+              core.setOutput('risk', 'N/A');
+              core.setOutput('findings', '');
+              core.setOutput('info', '');
+              return;
+            }
 
-          COMBINED=""
-          while IFS= read -r f; do
-            [ -z "$f" ] && continue
-            if [ -f "$f" ]; then
-              COMBINED="${COMBINED}$(cat "$f")"
-            fi
-          done <<< "$CHANGED_FILES"
+            let content;
+            try {
+              const resp = await github.rest.repos.getContent({
+                owner: pr.head.repo.owner.login,
+                repo: pr.head.repo.name,
+                path: proposalFile.filename,
+                ref: pr.head.ref
+              });
+              content = Buffer.from(resp.data.content, 'base64').toString('utf8');
+            } catch (e) {
+              console.log(`Could not read file: ${e.message}`);
+              core.setOutput('no_proposal', 'true');
+              core.setOutput('score', '0');
+              core.setOutput('max_score', '0');
+              core.setOutput('percentage', '0');
+              core.setOutput('risk', 'N/A');
+              core.setOutput('findings', '');
+              core.setOutput('info', '');
+              return;
+            }
 
-          if [ -z "$COMBINED" ]; then
-            echo "score=0" >> $GITHUB_OUTPUT
-            echo "max_score=0" >> $GITHUB_OUTPUT
-            echo "percentage=0" >> $GITHUB_OUTPUT
-            echo "risk=N/A" >> $GITHUB_OUTPUT
-            echo "no_proposal=true" >> $GITHUB_OUTPUT
-            echo "" > /tmp/findings.txt
-            echo "" > /tmp/info.txt
-            exit 0
-          fi
+            core.setOutput('no_proposal', 'false');
+            const lines = content.split('\n');
+            const lc = content.toLowerCase();
+            let score = 0;
+            let maxScore = 0;
+            let findings = [];
+            let info = [];
 
-          echo "no_proposal=false" >> $GITHUB_OUTPUT
-          LINE_COUNT=$(echo "$COMBINED" | wc -l)
-          TOTAL_SCORE=0
-          MAX_SCORE=0
-          FINDINGS=""
-          INFO=""
+            maxScore += 25;
+            const fakeTerms = [];
+            if (/sub.?net/i.test(content)) fakeTerms.push('sub-net');
+            if (/loop\s+node/i.test(content)) fakeTerms.push('Loop node');
+            if (/daml\s+vm/i.test(content)) fakeTerms.push('Daml VM');
+            if (/canton\s+(identity\s+provider|idp)/i.test(content)) fakeTerms.push('Canton IdP');
+            if (/\bshard(s|ing|ed)\b/i.test(content)) fakeTerms.push('sharding');
+            if (/canton\s+chain/i.test(content)) fakeTerms.push('Canton chain');
+            if (/daml\s+evm/i.test(content)) fakeTerms.push('Daml EVM');
+            if (/canton\s+gas/i.test(content)) fakeTerms.push('Canton gas');
+            if (fakeTerms.length > 0) {
+              score += 25;
+              findings.push(`Uses made-up/ai given Canton terms: ${fakeTerms.join(', ')}`);
+            }
 
-          MAX_SCORE=$((MAX_SCORE + 25))
-          TERM_ERRORS=""
-          echo "$COMBINED" | grep -qiE 'sub.?net' && TERM_ERRORS="${TERM_ERRORS}, sub-net"
-          echo "$COMBINED" | grep -qiE 'loop\s+node' && TERM_ERRORS="${TERM_ERRORS}, Loop node"
-          echo "$COMBINED" | grep -qiE 'daml\s+vm' && TERM_ERRORS="${TERM_ERRORS}, Daml VM"
-          echo "$COMBINED" | grep -qiE 'canton\s+(identity\s+provider|idp)' && TERM_ERRORS="${TERM_ERRORS}, Canton IdP"
-          echo "$COMBINED" | grep -qiE '\bshard(s|ing|ed)\b' && TERM_ERRORS="${TERM_ERRORS}, sharding"
-          echo "$COMBINED" | grep -qiE 'canton\s+chain' && TERM_ERRORS="${TERM_ERRORS}, Canton chain"
-          echo "$COMBINED" | grep -qiE 'daml\s+evm' && TERM_ERRORS="${TERM_ERRORS}, Daml EVM"
-          echo "$COMBINED" | grep -qiE 'canton\s+gas' && TERM_ERRORS="${TERM_ERRORS}, Canton gas"
-          TERM_ERRORS=$(echo "$TERM_ERRORS" | sed 's/^, //')
-          if [ -n "$TERM_ERRORS" ]; then
-            TOTAL_SCORE=$((TOTAL_SCORE + 25))
-            FINDINGS="${FINDINGS} Uses made-up ai given Canton terms: ${TERM_ERRORS}\n"
-          fi
+            maxScore += 20;
+            const brokenHyphens = (content.match(/\w-\s|\s-\w|\w-,|\w-\./g) || []).length;
+            if (brokenHyphens > 3) {
+              score += 20;
+              findings.push(`${brokenHyphens} broken hyphens found (AI copy-paste artifacts)`);
+            }
 
-          MAX_SCORE=$((MAX_SCORE + 20))
-          BROKEN_HYPHENS=$(echo "$COMBINED" | grep -cE '(\w-\s|\s-\w|\w-,|\w-\.)' || true)
-          if [ "$BROKEN_HYPHENS" -gt 3 ]; then
-            TOTAL_SCORE=$((TOTAL_SCORE + 20))
-            FINDINGS="${FINDINGS} ${BROKEN_HYPHENS} broken hyphens found (AI artifacts)\n"
-          fi
+            maxScore += 15;
+            const emDashes = (content.match(/—/g) || []).length;
+            if (emDashes > 8) {
+              score += 15;
+              findings.push(`${emDashes} em-dashes found (AI writing pattern)`);
+            }
 
-          MAX_SCORE=$((MAX_SCORE + 15))
-          EM_DASH_COUNT=$(echo "$COMBINED" | grep -co '—' || true)
-          if [ "$EM_DASH_COUNT" -gt 8 ]; then
-            TOTAL_SCORE=$((TOTAL_SCORE + 15))
-            FINDINGS="${FINDINGS} ${EM_DASH_COUNT} Too many em-dashes found (default AI writing pattern)\n"
-          fi
+            maxScore += 15;
+            const semicolonBullets = lines.filter(l => /;\s*$/.test(l)).length;
+            if (semicolonBullets > 10) {
+              score += 15;
+              findings.push(`${semicolonBullets} bullet points ending with semicolons (AI formatting)`);
+            }
 
-          MAX_SCORE=$((MAX_SCORE + 15))
-          SEMICOLON_BULLETS=$(echo "$COMBINED" | grep -cE ';\s*$' || true)
-          if [ "$SEMICOLON_BULLETS" -gt 10 ]; then
-            TOTAL_SCORE=$((TOTAL_SCORE + 15))
-            FINDINGS="${FINDINGS} ${SEMICOLON_BULLETS} bullet points ending with semicolons (AI formatting)\n"
-          fi
+            const missingList = [];
+            if (!/^#{1,4}\s.*(gtm|go.to.market|adoption|distribution)/im.test(content)) {
+              if (!/^\*{0,2}(gtm|go.to.market|adoption|distribution)/im.test(content)) {
+                missingList.push('GTM/Adoption');
+              }
+            }
+            if (!/^#{1,4}\s.*(maintenance|post.grant|sustainab)/im.test(content)) {
+              if (!/^\*{0,2}(maintenance|post.grant|sustainab)/im.test(content)) {
+                missingList.push('Maintenance');
+              }
+            }
+            if (!/^#{1,4}\s.*(acceptance|criteria)/im.test(content)) {
+              if (!/^\*{0,2}(acceptance|criteria)/im.test(content)) {
+                missingList.push('Acceptance Criteria');
+              }
+            }
+            if (missingList.length > 0) {
+              info.push(`Missing sections: ${missingList.join(', ')}`);
+            }
 
-          MISSING=""
-          if ! echo "$COMBINED" | grep -qiE '^#{1,4}\s.*(gtm|go.to.market|adoption|distribution)'; then
-            if ! echo "$COMBINED" | grep -qiE '^\*{0,2}(gtm|go.to.market|adoption|distribution)'; then
-              MISSING="${MISSING}, GTM/Adoption"
-            fi
-          fi
-          if ! echo "$COMBINED" | grep -qiE '^#{1,4}\s.*(maintenance|post.grant|sustainab)'; then
-            if ! echo "$COMBINED" | grep -qiE '^\*{0,2}(maintenance|post.grant|sustainab)'; then
-              MISSING="${MISSING}, Maintenance"
-            fi
-          fi
-          if ! echo "$COMBINED" | grep -qiE '^#{1,4}\s.*(acceptance|criteria)'; then
-            if ! echo "$COMBINED" | grep -qiE '^\*{0,2}(acceptance|criteria)'; then
-              MISSING="${MISSING}, Acceptance Criteria"
-            fi
-          fi
-          MISSING=$(echo "$MISSING" | sed 's/^, //')
-          if [ -n "$MISSING" ]; then
-            INFO="${INFO}Missing sections: ${MISSING}\n"
-          fi
-          
-          if [ "$MAX_SCORE" -gt 0 ]; then
-            PERCENTAGE=$((TOTAL_SCORE * 100 / MAX_SCORE))
-          else
-            PERCENTAGE=0
-          fi
+            const pct = maxScore > 0 ? Math.floor(score * 100 / maxScore) : 0;
+            const risk = pct >= 60 ? 'HIGH' : pct >= 35 ? 'MEDIUM' : 'LOW';
 
-          if [ "$PERCENTAGE" -ge 60 ]; then
-            RISK="HIGH"
-          elif [ "$PERCENTAGE" -ge 35 ]; then
-            RISK="MEDIUM"
-          else
-            RISK="LOW"
-          fi
-
-          echo "score=$TOTAL_SCORE" >> $GITHUB_OUTPUT
-          echo "max_score=$MAX_SCORE" >> $GITHUB_OUTPUT
-          echo "percentage=$PERCENTAGE" >> $GITHUB_OUTPUT
-          echo "risk=$RISK" >> $GITHUB_OUTPUT
-
-          printf '%b' "$FINDINGS" > /tmp/findings.txt
-          printf '%b' "$INFO" > /tmp/info.txt
+            core.setOutput('score', String(score));
+            core.setOutput('max_score', String(maxScore));
+            core.setOutput('percentage', String(pct));
+            core.setOutput('risk', risk);
+            core.setOutput('findings', findings.join('\n'));
+            core.setOutput('info', info.join('\n'));
 
       - name: Send to Slack
         if: always()
@@ -169,12 +149,12 @@ jobs:
           PR_URL="${{ github.event.pull_request.html_url }}"
           PR_AUTHOR="${{ github.event.pull_request.user.login }}"
 
-          FINDINGS=$(cat /tmp/findings.txt 2>/dev/null | sed 's/"/\\"/g')
-          INFO=$(cat /tmp/info.txt 2>/dev/null | sed 's/"/\\"/g')
+          FINDINGS="${{ steps.analysis.outputs.findings }}"
+          INFO="${{ steps.analysis.outputs.info }}"
 
           if [ "$NO_PROPOSAL" = "true" ]; then
             SCORE_LINE="AI Score: No proposal file found in PR"
-          elif [ -z "$(echo "$FINDINGS" | xargs 2>/dev/null)" ]; then
+          elif [ -z "$FINDINGS" ]; then
             SCORE_LINE="AI Score: Passed — no AI signals detected"
           else
             SCORE_LINE="AI Risk Level: ${RISK} | Score: ${SCORE}/${MAX_SCORE} (${PERCENTAGE}%)"
@@ -182,11 +162,11 @@ jobs:
 
           MSG="Dev Fund AI Analysis (Ready for Vote) — PR #${PR_NUMBER}\n\nProposal: ${PR_TITLE}\nSubmitter: @${PR_AUTHOR}\nLink: ${PR_URL}\n\n${SCORE_LINE}"
 
-          if [ "$NO_PROPOSAL" != "true" ] && [ -n "$(echo "$FINDINGS" | xargs 2>/dev/null)" ]; then
+          if [ -n "$FINDINGS" ]; then
             MSG="${MSG}\n\n${FINDINGS}"
           fi
 
-          if [ -n "$(echo "$INFO" | xargs 2>/dev/null)" ]; then
+          if [ -n "$INFO" ]; then
             MSG="${MSG}\n${INFO}"
           fi
 
